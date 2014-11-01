@@ -2338,8 +2338,8 @@ bt_hci_read_clock(PyObject *self, PyObject *args)
 
     res = hci_read_clock(fd, handle, which, &btclock, &accuracy, timeout);
     if (res) {
-    	Py_INCREF(Py_None);
-    	return Py_None;
+        Py_INCREF(Py_None);
+        return Py_None;
     }
 
     return Py_BuildValue("(ii)", btclock, accuracy);
@@ -2348,6 +2348,38 @@ PyDoc_STRVAR( bt_hci_read_clock_doc,
 "hci_read_clock(hci_fd, acl_handle, which_clock, timeout_ms)\n\
 \n\
 Get the Bluetooth Clock (native or piconet).\n\
+");
+
+
+/*
+ * params:  (int) socket fd, (uint_16) handle, (int_8) rssi, (int) timeout
+ * effect: read rssi value on connection (see bluetooth/hci_lib.h)
+ * return: (int) 0 on success, -1 on failure (?)
+ */
+static PyObject *
+bt_hci_read_rssi(PyObject *self, PyObject *args)
+{
+    int fd;
+    int handle;
+    int8_t rssi;
+    int timeout;
+    int res;
+
+    if ( !PyArg_ParseTuple(args, "iii", &fd, &handle, &timeout) )
+        return NULL;
+
+    res = hci_read_rssi(fd, handle, &rssi, timeout);
+    if (res) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    return Py_BuildValue("i", rssi);
+}
+PyDoc_STRVAR( bt_hci_read_rssi_doc,
+"hci_read_rssi(hci_fd, acl_handle, timeout_ms)\n\
+\n\
+Get the Bluetooth RSSI value.\n\
 ");
 
 /*
@@ -2759,6 +2791,7 @@ static PyMethodDef bt_methods[] = {
     DECL_BT_METHOD( hci_get_route, METH_VARARGS ),
     DECL_BT_METHOD( hci_role, METH_VARARGS ),
     DECL_BT_METHOD( hci_read_clock, METH_VARARGS ),
+    DECL_BT_METHOD( hci_read_rssi, METH_VARARGS ),
     DECL_BT_METHOD( hci_acl_conn_handle, METH_VARARGS ),
     DECL_BT_METHOD( hci_open_dev, METH_VARARGS ),
     DECL_BT_METHOD( hci_close_dev, METH_VARARGS ),
@@ -3521,9 +3554,9 @@ PyInit__bluetooth(void)
  * updates/modifications to support affix socket interface * 
  *   AAA     FFFFFFF FFFFFFF IIIIIII X     X    
  * A     A   F       F          I     X   X
- * A     A   F       F      I      X X
+ * A     A   F       F          I      X X
  * AAAAAAA   FFFF    FFFF       I      X X
- * A     A   F       F      I     X   X
+ * A     A   F       F          I     X   X
  * A     A   F       F       IIIIIII X     X
  * 
  * Any modifications of this sourcecode must keep this information !!!!!
