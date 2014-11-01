@@ -280,8 +280,8 @@ getsockaddrarg(PySocketSockObject *s, PyObject *args,
 
                 str2ba( ba_name, &addr->l2_bdaddr );
 
-                // check for a valid PSM
-                if( ! ( 0x1 & addr->l2_psm ) ) {
+                // check for a valid PSM - 0x00 is used for ping
+                if( ! ( 0x1 & addr->l2_psm ) && ! ( addr->l2_psm == 0x00) ) {
                     PyErr_SetString( PyExc_ValueError, "Invalid PSM");
                     return 0;
                 }
@@ -1459,27 +1459,30 @@ sock_initobj(PyObject *self, PyObject *args, PyObject *kwds)
 {
 	PySocketSockObject *s = (PySocketSockObject *)self;
 	int fd;
-	int family = AF_BLUETOOTH, type = SOCK_STREAM, proto = BTPROTO_RFCOMM;
-	static char *keywords[] = {"proto", 0};
+	int family = AF_BLUETOOTH, type = -1, proto = BTPROTO_RFCOMM;
+	static char *keywords[] = {"proto", "socktype", 0};
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwds,
-					 "|i:socket", keywords,
-					 &proto))
+					 "|ii:socket", keywords,
+					 &proto, &type))
 		return -1;
 
-    switch(proto) {
-        case BTPROTO_HCI:
-            type = SOCK_RAW;
-            break;
-        case BTPROTO_L2CAP:
-            type = SOCK_SEQPACKET;
-            break;
-        case BTPROTO_RFCOMM:
-            type = SOCK_STREAM;
-            break;
-        case BTPROTO_SCO:
-            type = SOCK_SEQPACKET;
-            break;
+    // note: default type was SOCK_STREAM
+    if (type == -1) {
+        switch(proto) {
+            case BTPROTO_HCI:
+                type = SOCK_RAW;
+                break;
+            case BTPROTO_L2CAP:
+                type = SOCK_SEQPACKET;
+                break;
+            case BTPROTO_RFCOMM:
+                type = SOCK_STREAM;
+                break;
+            case BTPROTO_SCO:
+                type = SOCK_SEQPACKET;
+                break;
+        }
     }
 
 	Py_BEGIN_ALLOW_THREADS
@@ -2596,7 +2599,7 @@ bt_sdp_advertise_service( PyObject *self, PyObject *args )
     sockaddr = (struct sockaddr *)addrbuf;
 
     // can only deal with L2CAP and RFCOMM sockets
-    if( socko->sock_proto != BTPROTO_L2CAP && 
+    if( socko->sock_proto != BTPROTO_L2CAP &&
             socko->sock_proto != BTPROTO_RFCOMM ) {
         PyErr_SetString(bluetooth_error, 
                 "Sorry, can only advertise L2CAP and RFCOMM sockets for now");
@@ -2938,6 +2941,11 @@ PyInit__bluetooth(void)
     PyModule_AddIntConstant(m, "L2CAP", BTPROTO_L2CAP);
     PyModule_AddIntConstant(m, "RFCOMM", BTPROTO_RFCOMM);
     PyModule_AddIntConstant(m, "SCO", BTPROTO_SCO);
+
+    PyModule_AddIntConstant(m, "SOCK_STREAM", SOCK_STREAM);
+    PyModule_AddIntConstant(m, "SOCK_DGRAM", SOCK_DGRAM);
+    PyModule_AddIntConstant(m, "SOCK_RAW", SOCK_RAW);
+    PyModule_AddIntConstant(m, "SOCK_SEQPACKET", SOCK_SEQPACKET);
 
 //	/* Socket types */
 //	ADD_INT_CONST(m, SOCK_STREAM);

@@ -11,7 +11,7 @@ else:
 import array
 import fcntl
 _constants = [ 'HCI', 'RFCOMM', 'L2CAP', 'SCO', 'SOL_L2CAP', 'SOL_RFCOMM',\
-    'L2CAP_OPTIONS' ]
+    'L2CAP_OPTIONS', 'SOCK_STREAM', 'SOCK_DGRAM', 'SOCK_RAW', 'SOCK_SEQPACKET' ]
 for _c in _constants:
     command_ = "{C} = _bt.{C1}".format(C=_c, C1=_c)
     exec(command_)
@@ -144,9 +144,9 @@ def _get_available_port (protocol):
 class BluetoothSocket:
     __doc__ = _bt.btsocket.__doc__
 
-    def __init__ (self, proto = RFCOMM, _sock=None):
+    def __init__ (self, proto = RFCOMM, socktype = -1, _sock=None):
         if _sock is None:
-            _sock = _bt.btsocket (proto)
+            _sock = _bt.btsocket (proto, socktype)
         self._sock = _sock
         self._proto = proto
 
@@ -169,6 +169,7 @@ class BluetoothSocket:
         if self._proto == RFCOMM or self._proto == L2CAP:
             addr, port = addrport
             if port == 0: addrport = (addr, _get_available_port (self._proto))
+            if port == -1: addrport = (addr, 0) # allow to bind to port 0 for l2ping behaviour...
         return self._sock.bind (addrport)
 
     def get_l2cap_options(self):
