@@ -1460,7 +1460,7 @@ sock_initobj(PyObject *self, PyObject *args, PyObject *kwds)
 	PySocketSockObject *s = (PySocketSockObject *)self;
 	int fd;
 	int family = AF_BLUETOOTH, type = -1, proto = BTPROTO_RFCOMM;
-	static char *keywords[] = {"proto", "socktype", 0};
+	static char *keywords[] = {"proto", "type", 0};
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwds,
 					 "|ii:socket", keywords,
@@ -1469,6 +1469,7 @@ sock_initobj(PyObject *self, PyObject *args, PyObject *kwds)
 
     // note: default type was SOCK_STREAM
     if (type == -1) {
+        type = SOCK_STREAM;
         switch(proto) {
             case BTPROTO_HCI:
                 type = SOCK_RAW;
